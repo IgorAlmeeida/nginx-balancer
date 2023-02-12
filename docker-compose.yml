@@ -110,6 +110,8 @@ services:
     ports: 
       - "9113:9113"
     container_name: nginx-exporter
+    depends_on:
+      - nginx
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command:
@@ -125,6 +127,8 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     container_name: prometheus
+    depends_on:
+      - nginx-exporter
     networks: 
       - minha-rede
 

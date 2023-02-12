@@ -105,6 +105,33 @@ services:
     depends_on:
       - postgres
 
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:0.10.0
+    ports: 
+      - "9113:9113"
+    container_name: nginx-exporter
+    depends_on:
+      - nginx
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - -nginx.scrape-uri
+      - http://container-lb:80/metrics
+    networks: 
+      - minha-rede
+
+  prometheus:
+    image: prom/prometheus:v2.41.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    container_name: prometheus
+    depends_on:
+      - nginx-exporter
+    networks: 
+      - minha-rede
+
 networks: 
     minha-rede:
         driver: bridge

@@ -1,9 +1,31 @@
 const express = require('express');
 const { Client } = require("pg");
 require('dotenv').config();
-const { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
+const { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, APP, PORT } = process.env;
+
+
+const client = require('prom-client')
+
+// Create a Registry which registers the metrics
+const register = new client.Registry()
+
+// Add a default label which is added to all metrics
+register.setDefaultLabels({
+    app: APP
+})
+
+// Enable the collection of default metrics
+client.collectDefaultMetrics({ register })
 
 app = express();
+
+
+app.get('/metrics', async (req, res) => {
+    res.setHeader('Content-Type', register.contentType)
+    res.end(await register.metrics())
+});
+
+
 
 /** 
  * Cenário I - Requisição com retorno de dados vazio
@@ -115,6 +137,6 @@ app.get('/route4', async(req, res) => {
     }
 });
 
-app.listen(80, (req, res) => {
+app.listen(PORT, (req, res) => {
     console.log("Server on")
 });

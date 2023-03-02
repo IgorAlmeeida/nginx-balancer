@@ -1,19 +1,5 @@
 version: '3'
 services:
-  nginx:
-    build:
-      dockerfile: ./docker/nginx.dockerfile
-      context: .
-    image: nginx
-    container_name: container-lb
-    ports:
-      - "80:80"
-    networks: 
-      - minha-rede
-    depends_on:
-      - "app1"
-      - "app2"
-      - "app3"
 
   postgres:
     image: postgres:14.1-alpine
@@ -51,6 +37,8 @@ services:
       DB_PASSWORD: postgres
       DB_NAME: postgres
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+      APP: app1
+      PORT: 80
     container_name: container-app1
     links:
       - postgres
@@ -73,6 +61,8 @@ services:
       DB_PASSWORD: postgres
       DB_NAME: postgres
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+      APP: app2
+      PORT: 80
     container_name: container-app2
     links:
       - postgres
@@ -94,6 +84,8 @@ services:
       DB_PASSWORD: postgres
       DB_NAME: postgres
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+      APP: app3
+      PORT: 80
     image: nodejs
     container_name: container-app3
     links:
@@ -105,8 +97,23 @@ services:
     depends_on:
       - postgres
 
+  nginx:
+    build:
+      dockerfile: ./docker/nginx.dockerfile
+      context: .
+    image: nginx
+    container_name: container-lb
+    ports:
+      - "80:80"
+    networks: 
+      - minha-rede
+    depends_on:
+      - "app1"
+      - "app2"
+      - "app3"
+
   nginx-exporter:
-    image: nginx/nginx-prometheus-exporter:0.10.0
+    image: nginx/nginx-prometheus-exporter:latest
     ports: 
       - "9113:9113"
     container_name: nginx-exporter
@@ -121,14 +128,52 @@ services:
       - minha-rede
 
   prometheus:
-    image: prom/prometheus:v2.41.0
+    image: prom/prometheus:latest
+    container_name: prometheus
     ports:
-      - "9090:9090"
+      - 9090:9090
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    container_name: prometheus
     depends_on:
-      - nginx-exporter
+      - "cadvisor"
+    networks: 
+      - minha-rede
+
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - 8080:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    depends_on: 
+        - "nginx-exporter"
+    networks: 
+      - minha-rede
+
+  pushgateway:
+    image: prom/pushgateway
+    container_name: pushgateway
+    ports:
+      - 9091:9091
+    networks: 
+      - minha-rede
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - "prometheus"
+      - "cadvisor"
     networks: 
       - minha-rede
 

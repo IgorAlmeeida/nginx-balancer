@@ -12,4 +12,4 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
     - targets:
-      - localhsot:9323
+      - <PRIVATE_IP_ADDRESS>:9323

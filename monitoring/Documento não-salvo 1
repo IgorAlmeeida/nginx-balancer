@@ -1,0 +1,36 @@
+docker service create --replicas 1 --name my-prometheus \ --mount type=bind,source=/tmp/prometheus.yml,destination=/etc/prometheus/prometheus.yml \ --publish published=9090,target=9090,protocol=tcp \ prom/prometheus
+
+
+
+  prometheus:
+    image: prom/prometheus:v2.41.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    container_name: prometheus
+    depends_on:
+      - nginx-exporter
+    networks: 
+      - minha-rede
+
+  grafana-api:
+    image: grafana/grafana-enterprise:8.2.0
+    container_name: grafana
+    ports:
+      - 3000:3000
+    user: '104'
+    depends_on:
+      - prometheus
+    networks: 
+      - minha-rede
+
+
+sudo nano /docker/prometheus/prometheus.yml
+
+
+docker run -d -p 9090:9091  --name prometheus-docker --network host -v /docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml  prom/prometheus
+
+
+sudo ufw allow 1191/tcp
+
